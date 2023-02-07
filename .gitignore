@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+
+code/bootloader/IAPTest_LL/IAPTest_LL/MDK-ARM/IAPTest_LL
+code/Unit_ExtEncoder/MDK-ARM/Unit_ExtEncoder
