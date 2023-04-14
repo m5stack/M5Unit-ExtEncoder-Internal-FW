@@ -209,7 +209,7 @@ void encode_update(void) {
 		}
 		usLastCnt = usNowCnt;
 		cDirCnt = 0;
-    meter = ((double)encoder_countAB / (double)pulse) * ((double)perimeter / 100.0);
+    meter = ((double)encoder_countAB / (double)pulse) * ((double)perimeter / 1000.0);
 	}
 	ucPressState = HAL_GPIO_ReadPin(Button_GPIO_Port, Button_Pin);
 }

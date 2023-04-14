@@ -54,8 +54,9 @@ TIM_HandleTypeDef htim3;
 /* USER CODE BEGIN PV */
 __IO float meter;
 __IO int32_t meter_int32;
-__IO int32_t perimeter = 100;
+__IO int32_t perimeter = 1000;
 __IO int32_t pulse = 2000;
+__IO int32_t pulse_reg = 1000;
 char temp_tx_char[9] = {0};
 char temp_integer_part[8] = {0};
 uint8_t flash_data[FLASH_DATA_SIZE] = {0};
@@ -183,6 +184,8 @@ void init_flash_data(void)
   } else {
     i2c_address[0] = flash_data[0];
     perimeter = flash_data[2] | (flash_data[3] << 8) | (flash_data[4] << 16) | (flash_data[5] << 24);
+    pulse = flash_data[6] | (flash_data[7] << 8) | (flash_data[8] << 16) | (flash_data[9] << 24);
+    pulse_reg = pulse / 2;
   }
   set_i2c_slave_address(i2c_address[0]);
 }
@@ -256,7 +259,7 @@ void Slave_Complete_Callback(uint8_t *rx_data, uint16_t len)
 	}
   else if (len == 1 && ((rx_data[0] >= 0x50) && (rx_data[0] <= 0x53)))
   {
-    i2c1_set_send_data((uint8_t *)&pulse, 4);
+    i2c1_set_send_data((uint8_t *)&pulse_reg, 4);
 	}
   else if (len > 1 && ((rx_data[0] >= 0x50) && (rx_data[0] <= 0x53)))
   {
@@ -265,7 +268,8 @@ void Slave_Complete_Callback(uint8_t *rx_data, uint16_t len)
       rx_mark[rx_data[0]-0x50+i] = 1;     
     }    
     if (rx_mark[0] && rx_mark[1] && rx_mark[2] && rx_mark[3]) {
-      pulse = (rx_buf[0] | (rx_buf[1] << 8) | (rx_buf[2] << 16) | (rx_buf[3] << 24));
+      pulse_reg = (rx_buf[0] | (rx_buf[1] << 8) | (rx_buf[2] << 16) | (rx_buf[3] << 24));
+      pulse = pulse_reg * 2;
       if (readPackedMessageFromFlash(flash_data, FLASH_DATA_SIZE)) {
         cover_data_to_flash();
         writeMessageToFlash(flash_data , FLASH_DATA_SIZE);
