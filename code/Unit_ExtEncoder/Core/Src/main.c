@@ -36,7 +36,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define FIRMWARE_VERSION 1
+#define FIRMWARE_VERSION 2
 #define I2C_ADDRESS 0x59
 #define APPLICATION_ADDRESS     ((uint32_t)0x08001000) 
 #define FLASH_DATA_SIZE 10
@@ -62,6 +62,7 @@ char temp_integer_part[8] = {0};
 uint8_t flash_data[FLASH_DATA_SIZE] = {0};
 uint8_t i2c_address[1] = {0};
 volatile uint8_t fm_version = FIRMWARE_VERSION;
+volatile uint8_t z_mode = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -95,6 +96,35 @@ void IAP_Set()
     /* Remap SRAM at 0x00000000 */
     SYSCFG->CFG1_B.MMSEL = SYSCFG_MemoryRemap_SRAM;
 #endif
+}
+
+void z_gpio_setting(uint8_t mode)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+
+  /*Configure GPIO pin : PA4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  switch (mode)
+  {
+  case 0:
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+    break;
+  case 1:
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+    break;
+  case 2:
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+    break;
+  
+  default:
+    break;
+  }
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
 }
 
 void user_i2c_init(void)
@@ -279,6 +309,27 @@ void Slave_Complete_Callback(uint8_t *rx_data, uint16_t len)
   else if (len == 1 && ((rx_data[0] >= 0x60) && (rx_data[0] <= 0x63)))
   {
     i2c1_set_send_data((uint8_t *)&encoder_counter, 4);
+	}
+  else if (len > 1 && ((rx_data[0] >= 0x60) && (rx_data[0] <= 0x63)))
+  {
+    for(int i = 0; i < len - 1; i++) {
+      rx_buf[rx_data[0]-0x60+i] = rx_data[1+i];
+      rx_mark[rx_data[0]-0x60+i] = 1;     
+    }    
+    if (rx_mark[0] && rx_mark[1] && rx_mark[2] && rx_mark[3]) {
+      encoder_counter = (rx_buf[0] | (rx_buf[1] << 8) | (rx_buf[2] << 16) | (rx_buf[3] << 24));
+    }
+	}
+  else if (len > 1 && (rx_data[0] == 0x70))
+  {
+    if (len == 2) {
+      z_mode = rx_data[1];
+      z_gpio_setting(z_mode);
+    }
+	}
+  else if (len == 1 && (rx_data[0] == 0x70))
+  {
+    i2c1_set_send_data((uint8_t *)&z_mode, 1);
 	}
   else if (len == 1 && (rx_data[0] == 0xFE))
   {

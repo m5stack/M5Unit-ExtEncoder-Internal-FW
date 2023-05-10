@@ -63,6 +63,7 @@ extern "C" {
 extern __IO float meter;
 extern __IO int32_t perimeter;
 extern __IO int32_t pulse;
+extern volatile uint8_t z_mode;
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
